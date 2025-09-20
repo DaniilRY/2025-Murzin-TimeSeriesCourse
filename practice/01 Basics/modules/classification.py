@@ -2,6 +2,7 @@ import numpy as np
 
 from modules.metrics import *
 from modules.utils import z_normalize
+from typing import Self
 
 
 default_metrics_params = {'euclidean': {'normalize': True},

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # for visualization
 import plotly
@@ -54,7 +55,7 @@ def plot_ts_set(ts_set: np.ndarray, title: str = 'Input Time Series Set') -> Non
     fig.show(renderer="colab")
 
 
-def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str = None, y_title: str = None, trace_titles: np.ndarray = None) -> None:
+def mplot2d(x: np.ndarray, y: np.ndarray, plot_title: str = None, x_title: str = None, y_title: str = None, trace_titles: np.ndarray = None) -> None:
     """
     Multiple 2D Plots on figure for different experiments
 
@@ -103,7 +104,7 @@ def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str
     fig.show(renderer="colab")
 
 
-def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
+def plot_bestmatch_data(ts: np.ndarray, query: np.ndarray) -> None:
     """
     Visualize the input data (time series and query) for the best match task
 
@@ -149,7 +150,7 @@ def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
     fig.show(renderer="colab")
 
 
-def plot_bestmatch_results(ts: np.ndarrray, query: np.ndarrray, bestmatch_results: dict) -> None:
+def plot_bestmatch_results(ts: np.ndarray, query: np.ndarray, bestmatch_results: dict) -> None:
     """
     Visualize the best match results
 
@@ -161,9 +162,58 @@ def plot_bestmatch_results(ts: np.ndarrray, query: np.ndarrray, bestmatch_result
     """
 
     # INSERT YOUR CODE
+    # --- Попытка извлечь индекс лучшего совпадения ---
+    best_idx = (
+        bestmatch_results.get("index")
+        or bestmatch_results.get("best_index")
+        or (bestmatch_results.get("indices")[0] if isinstance(bestmatch_results.get("indices"), (list, np.ndarray)) else None)
+    )
+
+    # --- Попытка извлечь расстояние ---
+    distance = (
+        bestmatch_results.get("distance")
+        or bestmatch_results.get("best_distance")
+        or (bestmatch_results.get("distances")[0] if isinstance(bestmatch_results.get("distances"), (list, np.ndarray)) else None)
+    )
+
+    # Проверка наличия индекса
+    if best_idx is None:
+        raise ValueError(
+            "Не удалось определить индекс совпадения. "
+            "Убедитесь, что в bestmatch_results есть ключ 'index', 'best_index' или 'indices'."
+        )
+
+    # Извлекаем участок временного ряда, соответствующий лучшему совпадению
+    match_segment = ts[best_idx:best_idx + len(query)]
+
+    plt.figure(figsize=(12, 6))
+
+    # Весь временной ряд
+    plt.plot(ts, label="Временной ряд", color="gray", alpha=0.6)
+
+    # Лучшее совпадение
+    plt.plot(range(best_idx, best_idx + len(query)), match_segment,
+             label=f"Лучшее совпадение (начало = {best_idx})", color="orange", linewidth=2)
+
+    # Запрос (масштабированный для наглядного сравнения)
+    plt.plot(range(best_idx, best_idx + len(query)),
+             (query - np.mean(query)) / np.std(query) * np.std(match_segment) + np.mean(match_segment),
+             label="Запрос (масштабированный)", color="blue", linestyle="--")
+
+    # Заголовок
+    if distance is not None:
+        plt.title(f"Лучшее совпадение (расстояние = {distance:.4f})")
+    else:
+        plt.title("Лучшее совпадение")
+
+    plt.xlabel("Время")
+    plt.ylabel("Значение")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
 
 
-def pie_chart(labels: np.ndarrray, values: np.ndarrray, plot_title='Pie chart') -> None:
+def pie_chart(labels: np.ndarray, values: np.ndarray, plot_title='Pie chart') -> None:
     """
     Build the pie chart
 

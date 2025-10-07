@@ -2,8 +2,7 @@ import numpy as np
 
 from modules.utils import z_normalize
 from modules.metrics import ED_distance, norm_ED_distance
-
-
+    
 def brute_force(ts: np.ndarray, query: np.ndarray, is_normalize: bool = True) -> np.ndarray:
     """
     Calculate the distance profile using the brute force algorithm
@@ -25,6 +24,17 @@ def brute_force(ts: np.ndarray, query: np.ndarray, is_normalize: bool = True) ->
 
     dist_profile = np.zeros(shape=(N,))
 
-    # INSERT YOUR CODE
+    Q = query
 
+    if is_normalize:
+        Q = z_normalize(Q)
+
+    for i in range(N):
+        T = ts[i:i+m]
+        
+        if is_normalize:
+            T = z_normalize(T)
+
+        dist_profile[i] = ED_distance(Q, T)
+    
     return dist_profile

@@ -14,10 +14,14 @@ def ED_distance(ts1: np.ndarray, ts2: np.ndarray) -> float:
     -------
     ed_dist: euclidean distance between ts1 and ts2
     """
-    
-    ed_dist = 0
 
-    # INSERT YOUR CODE
+    if len(ts1) != len(ts2):
+        raise ValueError("Длина временных рядов не совпадает")
+
+    # Вычисляем евклидово расстояние
+    diff = ts1 - ts2
+    squared_diff = np.sum(diff ** 2)
+    ed_dist = np.sqrt(squared_diff)
 
     return ed_dist
 

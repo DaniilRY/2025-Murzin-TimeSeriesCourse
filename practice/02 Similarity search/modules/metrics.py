@@ -62,8 +62,20 @@ def DTW_distance(ts1: np.ndarray, ts2: np.ndarray, r: float = 1) -> float:
     dtw_dist: DTW distance between ts1 and ts2
     """
 
-    dtw_dist = 0
+    n, m = len(ts1), len(ts2)
+    w = int(max(r * max(n, m), abs(n - m)))
 
-    # INSERT YOUR CODE
+    dtw = np.full((n + 1, m + 1), np.inf)
+    dtw[0, 0] = 0
 
-    return dtw_dist
+    for i in range(1, n + 1):
+        start = max(1, i - w)
+        end = min(m, i + w) + 1
+        
+        for j in range(start, end):
+            cost = (ts1[i - 1] - ts2[j - 1]) ** 2
+            dtw[i, j] = cost + min(dtw[i-1, j  ],
+                                   dtw[i  , j-1],
+                                   dtw[i-1, j-1])
+
+    return dtw[n, m] 

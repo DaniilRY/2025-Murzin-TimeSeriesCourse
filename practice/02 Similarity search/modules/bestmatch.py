@@ -155,6 +155,17 @@ class NaiveBestMatchFinder(BestMatchFinder):
         }
         
         # INSERT YOUR CODE
+        if self.is_normalize:
+            query = z_normalize(query)
+
+        for i in range(N - m):
+            if self.is_normalize:
+                T = z_normalize(ts_data[i])
+
+            dist = DTW_distance(T, query, self.r)
+            dist_profile[i] = dist
+
+        bestmatch = topK_match(dist_profile, excl_zone, self.topK)
 
         return bestmatch
 

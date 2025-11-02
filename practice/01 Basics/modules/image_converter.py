@@ -3,8 +3,10 @@ import pandas as pd
 import math
 import cv2
 import imutils
-from google.colab.patches import cv2_imshow
+# from google.colab.patches import cv2_imshow
+import matplotlib.pyplot as plt
 
+from typing import Union
 
 class Image2TimeSeries:
     """
@@ -18,6 +20,31 @@ class Image2TimeSeries:
     def __init__(self, angle_step: int = 10) -> None:
         self.angle_step: int = angle_step
 
+    # (остальные методы без изменений...)
+
+    def _img_show(self, img, contour, edge_coordinates, center):
+        """
+        Корректная визуализация через matplotlib (совместима с Colab/Jupyter).
+        Показывает контур, центр и лучи от центра к контуру.
+        """
+
+        # Нарисуем контур
+        cv2.drawContours(img, [contour], -1, (0, 255, 0), 2)
+
+        # Центр
+        cv2.circle(img, (int(center[0]), int(center[1])), 5, (255, 0, 0), -1)
+
+        # Линии от центра до краёв
+        for pt in edge_coordinates:
+            x, y = int(pt[0]), int(pt[1])
+            cv2.line(img, (int(center[0]), int(center[1])), (x, y), (255, 0, 255), 2)
+
+        # Показ изображения в правильных цветах
+        plt.figure(figsize=(6, 6))
+        plt.imshow(cv2.cvtColor(imutils.resize(img, width=400), cv2.COLOR_BGR2RGB))
+        plt.title("Image with Contours and Rays")
+        plt.axis("off")
+        plt.show()
 
     def _img_preprocess(self, img: np.ndarray) -> np.ndarray:
         """
@@ -32,8 +59,23 @@ class Image2TimeSeries:
         prep_img: image after preprocessing
         """
 
-        # INSERT YOUR CODE
-
+        # Инверсия изображения
+        inverted_img = cv2.bitwise_not(img)
+        
+        # Размытие изображения
+        blurred_img = cv2.GaussianBlur(inverted_img, (5, 5), 0)
+        
+        # Бинаризация изображения
+        _, binary_img = cv2.threshold(blurred_img, 127, 255, cv2.THRESH_BINARY)
+        
+        # Морфологические операции
+        kernel = np.ones((5, 5), np.uint8)
+        eroded_img = cv2.erode(binary_img, kernel, iterations=1)
+        dilated_img = cv2.dilate(eroded_img, kernel, iterations=1)
+        
+        # Медианная фильтрация
+        prep_img = cv2.medianBlur(dilated_img, 5)
+        
         return prep_img
 
 
@@ -50,6 +92,9 @@ class Image2TimeSeries:
         contour: object contour
         """
 
+        if len(img.shape) >= 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        print(img.shape)
         contours, hierarchy = cv2.findContours(img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contour = [cnt for cnt in contours if cv2.contourArea(cnt) > 500][0]
 
@@ -144,29 +189,6 @@ class Image2TimeSeries:
 
         return edge_coordinates
 
-
-    def _img_show(self, img: np.ndarray, contour: np.ndarray, edge_coordinates: list[np.ndarray], center: tuple[float, float]) -> None:
-        """
-        Draw the raw image with contour, center of the shape on the image and rais from starting center
-
-        Parameters
-        ----------
-        img: raw image
-        contour: object contour
-        edge_coordinates: contour points
-        center: object center
-        """
-
-        cv2.drawContours(img, [contour], -1, (0, 255, 0), 6)
-        cv2.circle(img, center, 7, (255, 255, 255), -1)
-        cv2.putText(img, "center", (center[0]-20, center[1]-20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 6)
-        for i in range(len(edge_coordinates)):
-            cv2.drawContours(img, np.array([[center, edge_coordinates[i]]]), -1, (255, 0, 255), 4)
-
-        cv2_imshow(imutils.resize(img, width=200))
-
-
     def convert(self, img: np.ndarray, is_visualize: bool = False) -> np.ndarray:
         """
         Convert image to time series by angle-based method
@@ -186,7 +208,7 @@ class Image2TimeSeries:
         prep_img = self._img_preprocess(img)
         contour = self._get_contour(prep_img)
         center = self._get_center(contour)
-        edge_coordinates = self._get_edge_coordinates(contour.squeeze(), center)
+        edge_coordinates = self._get_edge_coordinates(contour.reshape(-1, 2), center)
 
         if (is_visualize):
             self._img_show(img.copy(), contour, edge_coordinates, center)

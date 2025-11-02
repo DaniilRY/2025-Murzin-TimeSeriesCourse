@@ -24,7 +24,14 @@ def compute_mp(ts1: np.ndarray, m: int, exclusion_zone: int = None, ts2: np.ndar
     """
     
     # INSERT YOUR CODE
+    if exclusion_zone is None:
+        exclusion_zone = math.ceil(m / config.STUMPY_EXCL_ZONE_DENOM)
 
+    if ts2 is None:
+        mp = stumpy.stump(ts1, m)
+    else:
+        mp = stumpy.stump(ts1, m, ts2)
+    
     return {'mp': mp[:, 0],
             'mpi': mp[:, 1],
             'm' : m,

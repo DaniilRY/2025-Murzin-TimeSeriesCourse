@@ -35,28 +35,49 @@ def heads_tails(consumptions: dict, cutoff, house_idx: list) -> dict, dict:
     
     return heads, tails
 
+def compute_new_mp(ts1, m, exclusion_zone=None, ts2=None):
+    if exclusion_zone is None:
+        exclusion_zone = math.ceil(m / config.STUMPY_EXCL_ZONE_DENOM)
 
-def meter_swapping_detection(heads: dict, tails: dict, house_idx: dict, m: int) -> dict:
-    """
-    Find the swapped time series pair
+    m = int(m)
 
-    Parameters
-    ---------
-    heads: heads of time series
-    tails: tails of time series
-    house_idx: indices of houses
-    m: subsequence length
+    if ts2 is None:
+        mp = stumpy.stump(ts1, m)
+    else:
+        mp = stumpy.stump(ts1, m, ts2)
+    
+    return mp
 
-    Returns
-    --------
-    min_score: time series pair with minimum swap-score
-    """
+def meter_swapping_detection(heads, tails, house_idx, m):
+    m = int(m)
+    min_score = {'score': float('inf'), 'i': None, 'mp_j': None}
 
-    eps = 0.001
+    for i in house_idx:
+        head_i = heads[f'H_{i}']
+        for j in house_idx:
+            if i == j:
+                continue
+            
+            tail_j = tails[f'T_{j}']
 
-    min_score = {}
+            if hasattr(head_i, 'values'):
+                head_i_vals = head_i.values.flatten()
+            else:
+                head_i_vals = head_i.flatten()
+            
+            if hasattr(tail_j, 'values'):
+                tail_j_vals = tail_j.values.flatten()
+            else:
+                tail_j_vals = tail_j.flatten()
+            
+            mp = compute_new_mp(head_i_vals, m, ts2=tail_j_vals)
+            min_distance = np.min(mp[:, 0])
 
-    # INSERT YOUR CODE
+            if min_distance < min_score['score']:
+                min_score['score'] = min_distance
+                min_score['i'] = i
+                min_score['j'] = j
+                min_score['mp_j'] = mp
     
     return min_score
 
